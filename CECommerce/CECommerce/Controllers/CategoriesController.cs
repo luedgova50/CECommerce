@@ -1,29 +1,39 @@
 ﻿namespace CECommerce.Controllers
 {
-    
+    using CECommerce.Classes;
+    using CECommerce.Models;
     using System;
     using System.Data.Entity;
     using System.Linq;
     using System.Net;
     using System.Web.Mvc;
-    using CECommerce.Classes;
-    using CECommerce.Models;
 
-    [Authorize(Roles ="Admin")]
-    public class CitiesController : Controller
+    [Authorize(Roles ="User")]
+    public class CategoriesController : Controller
     {
-        private CECommerceContext db = new CECommerceContext();
+        private CECommerceContext db = new CECommerceContext();        
 
-        // GET: Cities
+        // GET: Categories
         public ActionResult Index()
         {
-            var cities = 
-                db.Cities.Include(c => c.State);
+            var user =
+                db.Users.
+                Where(us => us.UserName == User.Identity.Name).
+                FirstOrDefault();
 
-            return View(cities.ToList());
+            if (user == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var categories =
+                db.Categories.
+                Where(cat => cat.CompanyId == user.CompanyId);
+
+            return View(categories.ToList());
         }
 
-        // GET: Cities/Details/5
+        // GET: Categories/Details/5
         public ActionResult Details(int? id)
         {
             if (id == null)
@@ -31,35 +41,47 @@
                 return new HttpStatusCodeResult(
                     HttpStatusCode.BadRequest);
             }
-            var city = db.Cities.Find(id);
-            if (city == null)
+
+            var category = db.Categories.Find(id);
+
+            if (category == null)
             {
                 return HttpNotFound();
             }
-            return View(city);
+
+            return View(category);
         }
 
-        // GET: Cities/Create
+        // GET: Categories/Create
         public ActionResult Create()
         {
-            ViewBag.StateId = 
-                new SelectList(
-                    ComBoxHelpers.
-                    GetStates(), 
-                    "StateId", 
-                    "NameState");
+            var user =
+                db.Users.
+                Where(us => us.UserName == User.Identity.Name).
+                FirstOrDefault();
 
-            return View();
+            if (user == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var category =
+                new Category
+                {
+                    CompanyId = user.CompanyId,
+                };
+
+            return View(category);
         }
 
-        // POST: Cities/Create
+        // POST: Categories/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(City city)
+        public ActionResult Create(Category category)
         {
             if (ModelState.IsValid)
             {
-                db.Cities.Add(city);
+                db.Categories.Add(category);
 
                 try
                 {
@@ -91,18 +113,18 @@
                 }
             }
 
-            ViewBag.StateId = 
+            ViewBag.CompanyId = 
                 new SelectList(
                     ComBoxHelpers.
-                    GetStates(), 
-                    "StateId", 
-                    "NameState", 
-                    city.StateId);
+                    GetCompanies(), 
+                    "CompanyId", 
+                    "NameCompany", 
+                    category.CompanyId);
 
-            return View(city);
+            return View(category);
         }
 
-        // GET: Cities/Edit/5
+        // GET: Categories/Edit/5
         public ActionResult Edit(int? id)
         {
             if (id == null)
@@ -111,32 +133,24 @@
                     HttpStatusCode.BadRequest);
             }
 
-            var city = db.Cities.Find(id);
+            var category = db.Categories.Find(id);
 
-            if (city == null)
+            if (category == null)
             {
                 return HttpNotFound();
-            }
+            }            
 
-            ViewBag.StateId = 
-                new SelectList(
-                    ComBoxHelpers.
-                    GetStates(), 
-                    "StateId", 
-                    "NameState", 
-                    city.StateId);
-
-            return View(city);
+            return View(category);
         }
 
-        // POST: Cities/Edit/5
+        // POST: Categories/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(City city)
+        public ActionResult Edit(Category category)
         {
             if (ModelState.IsValid)
             {
-                db.Entry(city).State = 
+                db.Entry(category).State = 
                     EntityState.Modified;
 
                 try
@@ -167,20 +181,12 @@
                             ex.Message);
                     }
                 }
-            }
+            }            
 
-            ViewBag.StateId = 
-                new SelectList(
-                    ComBoxHelpers.
-                    GetStates(), 
-                    "StateId", 
-                    "NameState", 
-                    city.StateId);
-
-            return View(city);
+            return View(category);
         }
 
-        // GET: Cities/Delete/5
+        // GET: Categories/Delete/5
         public ActionResult Delete(int? id)
         {
             if (id == null)
@@ -189,24 +195,24 @@
                     HttpStatusCode.BadRequest);
             }
 
-            var city = db.Cities.Find(id);
+            var category = db.Categories.Find(id);
 
-            if (city == null)
+            if (category == null)
             {
                 return HttpNotFound();
             }
 
-            return View(city);
+            return View(category);
         }
 
-        // POST: Cities/Delete/5
+        // POST: Categories/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            var city = db.Cities.Find(id);
+            var category = db.Categories.Find(id);
 
-            db.Cities.Remove(city);
+            db.Categories.Remove(category);
 
             try
             {
@@ -238,7 +244,7 @@
                 }
             }
 
-            return View(city);
+            return View(category);
         }
 
         protected override void Dispose(bool disposing)

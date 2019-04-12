@@ -8,6 +8,7 @@
     using System.Net;
     using System.Web.Mvc;
 
+    [Authorize(Roles = "Admin")]
     public class CompaniesController : Controller
     {
         private CECommerceContext db = new CECommerceContext();
@@ -199,7 +200,8 @@
 
                     var file = string.Format("{0}.jpg", company.CompanyId);
 
-                    var response = FilesHelpers.
+                    var response = 
+                        FilesHelpers.
                         UploadPhoto(
                         company.LogoFile,
                         folder,

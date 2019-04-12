@@ -1,29 +1,32 @@
 ﻿namespace CECommerce.Controllers
 {
-    
+    using CECommerce.Classes;
+    using CECommerce.Models;
     using System;
+    using System.Data;
     using System.Data.Entity;
     using System.Linq;
     using System.Net;
     using System.Web.Mvc;
-    using CECommerce.Classes;
-    using CECommerce.Models;
 
-    [Authorize(Roles ="Admin")]
-    public class CitiesController : Controller
+    [Authorize(Roles = "Admin")]
+    public class UsersController : Controller
     {
         private CECommerceContext db = new CECommerceContext();
 
-        // GET: Cities
+        // GET: Users
         public ActionResult Index()
         {
-            var cities = 
-                db.Cities.Include(c => c.State);
+            var users = 
+                db.Users.
+                Include(u => u.City).
+                Include(u => u.Company).
+                Include(u => u.State);
 
-            return View(cities.ToList());
+            return View(users.ToList());
         }
 
-        // GET: Cities/Details/5
+        // GET: Users/Details/5
         public ActionResult Details(int? id)
         {
             if (id == null)
@@ -31,17 +34,34 @@
                 return new HttpStatusCodeResult(
                     HttpStatusCode.BadRequest);
             }
-            var city = db.Cities.Find(id);
-            if (city == null)
+
+            var user = db.Users.Find(id);
+
+            if (user == null)
             {
                 return HttpNotFound();
             }
-            return View(city);
+
+            return View(user);
         }
 
-        // GET: Cities/Create
+        // GET: Users/Create
         public ActionResult Create()
         {
+            ViewBag.CityId = 
+                new SelectList(
+                    ComBoxHelpers.
+                    GetCities(), 
+                    "CityId", 
+                    "NameCity");
+
+            ViewBag.CompanyId = 
+                new SelectList(
+                    ComBoxHelpers.
+                    GetCompanies(), 
+                    "CompanyId", 
+                    "NameCompany");
+
             ViewBag.StateId = 
                 new SelectList(
                     ComBoxHelpers.
@@ -52,18 +72,49 @@
             return View();
         }
 
-        // POST: Cities/Create
+        // POST: Users/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(City city)
+        public ActionResult Create(User user)
         {
             if (ModelState.IsValid)
             {
-                db.Cities.Add(city);
+                db.Users.Add(user);
 
                 try
                 {
                     db.SaveChanges();
+
+                    UsersHelpers.
+                        CreateUserASP(user.UserName, "User");
+
+                    if (user.PhotoFile != null)
+                    {
+                        var folder = "~/Content/Photos";
+
+                        var file = string.Format("{0}.jpg",
+                           user.UserID);
+
+                        var response =
+                            FilesHelpers.
+                            UploadPhoto(
+                            user.PhotoFile,
+                            folder, file);
+
+                        if (response)
+                        {
+                            var pic =
+                             string.Format("{0}/{1}",
+                             folder,
+                             file);
+
+                            user.Photo = pic;
+
+                            db.Entry(user).State = EntityState.Modified;
+
+                            db.SaveChanges();
+                        }
+                    }
 
                     return RedirectToAction("Index");
                 }
@@ -91,18 +142,34 @@
                 }
             }
 
+            ViewBag.CityId = 
+                new SelectList(
+                    ComBoxHelpers.
+                    GetCities(), 
+                    "CityId", 
+                    "NameCity", 
+                    user.CityId);
+
+            ViewBag.CompanyId = 
+                new SelectList(
+                    ComBoxHelpers.
+                    GetCompanies(), 
+                    "CompanyId", 
+                    "NameCompany", 
+                    user.CompanyId);
+
             ViewBag.StateId = 
                 new SelectList(
                     ComBoxHelpers.
                     GetStates(), 
                     "StateId", 
                     "NameState", 
-                    city.StateId);
+                    user.StateId);
 
-            return View(city);
+            return View(user);
         }
 
-        // GET: Cities/Edit/5
+        // GET: Users/Edit/5
         public ActionResult Edit(int? id)
         {
             if (id == null)
@@ -111,12 +178,28 @@
                     HttpStatusCode.BadRequest);
             }
 
-            var city = db.Cities.Find(id);
+            var user = db.Users.Find(id);
 
-            if (city == null)
+            if (user == null)
             {
                 return HttpNotFound();
             }
+
+            ViewBag.CityId = 
+                new SelectList(
+                    ComBoxHelpers.
+                    GetCities(), 
+                    "CityId", 
+                    "NameCity", 
+                    user.CityId);
+
+            ViewBag.CompanyId = 
+                new SelectList(
+                    ComBoxHelpers.
+                    GetCompanies(), 
+                    "CompanyId", 
+                    "NameCompany", 
+                    user.CompanyId);
 
             ViewBag.StateId = 
                 new SelectList(
@@ -124,19 +207,56 @@
                     GetStates(), 
                     "StateId", 
                     "NameState", 
-                    city.StateId);
+                    user.StateId);
 
-            return View(city);
+            return View(user);
         }
 
-        // POST: Cities/Edit/5
+        // POST: Users/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(City city)
+        public ActionResult Edit(User user)
         {
             if (ModelState.IsValid)
             {
-                db.Entry(city).State = 
+                if (user.PhotoFile != null)
+                {
+                    var folder = "~/Content/Photos";
+
+                    var pic = string.Empty;
+
+                    var file = string.Format("{0}.jpg", user.UserID);
+
+                    var response = 
+                        FilesHelpers.
+                        UploadPhoto(
+                        user.PhotoFile,
+                        folder,
+                        file);
+
+                    if (response)
+                    {
+                        pic = string.Format("{0}/{1}", folder, user.UserID);
+
+                        user.Photo = pic;
+                    }
+
+                }
+
+                var db2 = new CECommerceContext();
+
+                var currentUser = db2.Users.Find(user.UserID);
+
+                if(currentUser.UserName != null)
+                {
+
+                    UsersHelpers.UpdateUserName(currentUser.UserName, user.UserName);
+
+                }
+
+                db2.Dispose();
+
+                db.Entry(user).State = 
                     EntityState.Modified;
 
                 try
@@ -168,6 +288,21 @@
                     }
                 }
             }
+            ViewBag.CityId = 
+                new SelectList(
+                    ComBoxHelpers.
+                    GetCities(), 
+                    "CityId", 
+                    "NameCity", 
+                    user.CityId);
+
+            ViewBag.CompanyId = 
+                new SelectList(
+                    ComBoxHelpers.
+                    GetCompanies(), 
+                    "CompanyId", 
+                    "NameCompany", 
+                    user.CompanyId);
 
             ViewBag.StateId = 
                 new SelectList(
@@ -175,12 +310,12 @@
                     GetStates(), 
                     "StateId", 
                     "NameState", 
-                    city.StateId);
+                    user.StateId);
 
-            return View(city);
+            return View(user);
         }
 
-        // GET: Cities/Delete/5
+        // GET: Users/Delete/5
         public ActionResult Delete(int? id)
         {
             if (id == null)
@@ -189,29 +324,32 @@
                     HttpStatusCode.BadRequest);
             }
 
-            var city = db.Cities.Find(id);
+            var user = db.Users.Find(id);
 
-            if (city == null)
+            if (user == null)
             {
                 return HttpNotFound();
             }
 
-            return View(city);
+            return View(user);
         }
 
-        // POST: Cities/Delete/5
+        // POST: Users/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            var city = db.Cities.Find(id);
+            var user = db.Users.Find(id);
 
-            db.Cities.Remove(city);
+            db.Users.Remove(user);
 
             try
             {
                 db.SaveChanges();
 
+                UsersHelpers.
+                    DeleteUser(user.UserName);
+                
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
@@ -238,7 +376,7 @@
                 }
             }
 
-            return View(city);
+            return View(user);
         }
 
         protected override void Dispose(bool disposing)
@@ -249,6 +387,18 @@
             }
 
             base.Dispose(disposing);
+        }
+
+        public JsonResult GetCities(int stateId)
+        {
+            db.Configuration.
+                ProxyCreationEnabled = false;
+
+            var cities = 
+                db.Cities.Where(
+                    c => c.StateId == stateId);
+
+            return Json(cities);
         }
     }
 }

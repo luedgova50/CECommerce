@@ -24,6 +24,10 @@
 
         public DbSet<Company> Companies { get; set; }
 
-        public System.Data.Entity.DbSet<CECommerce.Models.User> Users { get; set; }
+        public DbSet<User> Users { get; set; }
+
+        public DbSet<Category> Categories { get; set; }
+
+        public System.Data.Entity.DbSet<CECommerce.Models.Tax> Taxes { get; set; }
     }
 }

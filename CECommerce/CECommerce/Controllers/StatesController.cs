@@ -8,6 +8,7 @@
     using System.Web.Mvc;
     using CECommerce.Models;
 
+    [Authorize(Roles = "Admin")]
     public class StatesController : Controller
     {
         private CECommerceContext db = new CECommerceContext();

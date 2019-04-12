@@ -1,6 +1,8 @@
 ﻿namespace CECommerce
 {
+    using CECommerce.Classes;
     using CECommerce.Models;
+    using System;
     using System.Data.Entity;
     using System.Web;
     using System.Web.Http;
@@ -18,6 +20,8 @@
                     CECommerceContext,
                     Migrations.Configuration>());
 
+            CheckRolesAndSuperUser();
+
             AreaRegistration.RegisterAllAreas();
 
             GlobalConfiguration.Configure(WebApiConfig.Register);
@@ -27,6 +31,15 @@
             RouteConfig.RegisterRoutes(RouteTable.Routes);
 
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+        }
+
+        private void CheckRolesAndSuperUser()
+        {
+            UsersHelpers.CheckRole("Admin");
+
+            UsersHelpers.CheckRole("User");
+
+            UsersHelpers.CheckSuperUser();
         }
     }
 }

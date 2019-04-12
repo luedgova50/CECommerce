@@ -1,16 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using System.Web.Mvc;
-
-namespace CECommerce.Controllers
+﻿namespace CECommerce.Controllers
 {
+    using CECommerce.Models;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Web;
+    using System.Web.Mvc;
+
     public class HomeController : Controller
     {
+        private CECommerceContext dab = new CECommerceContext();
+
         public ActionResult Index()
         {
-            return View();
+            var user = 
+                dab.Users.Where(
+                us => us.UserName == User.Identity.Name).
+                FirstOrDefault();
+
+            return View(user);
         }
 
         public ActionResult About()
